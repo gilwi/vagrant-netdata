@@ -1,0 +1,141 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Add IP address of all hosts to all hosts
+      lineinfile:
+        dest: /etc/hosts
+        regexp: '.*{{ item }}$'
+        line: "{{ hostvars[item].ansible_host }} {{item}}"
+        state: present
+      when: hostvars[item].ansible_host is defined
+      with_items: "{{ groups.all }}"
+
+- hosts: netdata
+  become: yes
+  tasks:
+
+    - name: Download netdata installer
+      get_url:
+        url: https://my-netdata.io/kickstart-static64.sh
+        dest: /opt/kickstart.sh
+        mode: '0700'
+
+    - name: install netdata
+      shell: bash /opt/kickstart.sh --dont-wait
+      args:
+        creates: /opt/netdata
+
+# - hosts: graphite
+#   become: yes
+#   vars:
+#     graphite_src:
+#         - { src: https://github.com/graphite-project/graphite-web.git, dest: graphite-web, creates: /opt/graphite }
+#         - { src: https://github.com/graphite-project/carbon.git, dest: carbon, creates: /opt/graphite/lib/carbon }
+#         - { src: https://github.com/graphite-project/whisper.git, dest: whisper, creates: /usr/local/bin/whisper-create.py }
+#         - { src: https://github.com/graphite-project/ceres.git, dest: ceres, creates: /usr/local/bin/ceres-node-create }
+
+#   tasks:
+
+#     - name: Add grafana repo
+#       yum_repository:
+#         name: grafana
+#         description: Grafana repo
+#         baseurl: https://packages.grafana.com/oss/rpm
+#         repo_gpgcheck: yes
+#         gpgcheck: yes
+#         gpgkey: https://packages.grafana.com/gpg.key
+#         sslverify: yes
+#         sslcacert: /etc/pki/tls/certs/ca-bundle.crt
+
+#     - name: Install grafana
+#       package:
+#         name: grafana
+#         state: present
+
+#     - name: Enable service grafana-server
+#       ansible.builtin.systemd:
+#         name: grafana-server
+#         enabled: yes
+#         state: started
+
+#     - name: Install graphite deps
+#       package:
+#         name: "{{ item }}"
+#         state: present
+#       loop:
+#         - git
+#         - python36-devel
+#         - python3-pip
+#         - cairo-devel
+#         - libffi-devel
+
+#     - name: Download graphite repos
+#       git:
+#         repo: "{{ item.src }}"
+#         dest: "/root/{{ item.dest }}"
+#         version: master
+#       loop: "{{ graphite_src }}"
+
+#     - name: Run setup.py for graphite projects
+#       command: python3 setup.py install
+#       args:
+#         chdir: "/root/{{ item.dest }}"
+#         creates: "{{ item.creates }}"
+#       loop: "{{ graphite_src }}"
+
+#     - name: Install specified python requirements
+#       pip:
+#         requirements: /root/graphite-web/requirements.txt
+
+#     - name: Configure webapp database
+#       command: python3 manage.py migrate --settings=graphite.settings
+#       args:
+#         chdir: /root/graphite-web/webapp
+#       environment:
+#         PYTHONPATH: /opt/graphite/webapp
+
+- hosts: graphitebuntu
+  become: yes
+  tasks:
+    - name: Install git
+      package:
+        name: git
+        state: present
+
+    - name: Clone synthesize
+      git:
+        repo: https://github.com/obfuscurity/synthesize
+        dest: /root/synthesize
+        version: master
+
+    - name: Make synthesize executable
+      file:
+        path: /root/synthesize/install
+        owner: root
+        group: root
+        mode: '0700'
+
+    - name: Install pip
+      apt:
+        name: python3-pip
+        state: latest
+        update_cache: yes
+
+    - name: Install deps
+      apt:
+        name: python3-cairocffi
+        state: latest
+
+    - name: Upgrade pip
+      pip:
+        name: pip
+        executable: pip3
+        state: latest
+
+    - name: Run synthesize
+      command:
+        cmd: /root/synthesize/install
+        creates: /opt/graphite
+      async: 3600
+      poll: 10
