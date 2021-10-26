@@ -11,7 +11,7 @@
       when: hostvars[item].ansible_host is defined
       with_items: "{{ groups.all }}"
 
-- hosts: netdata
+- hosts: all
   become: yes
   tasks:
 
@@ -25,6 +25,18 @@
       shell: bash /opt/kickstart.sh --dont-wait
       args:
         creates: /opt/netdata
+
+    - name: Configure graphite exporter
+      copy:
+        dest: "/opt/netdata/etc/netdata/exporting.conf"
+        content: |
+          [exporting:global]
+              enabled = yes
+          [graphite:netdata]
+              enabled = yes
+              destination = graphitebuntu:2003
+              hostname = {{ inventory_hostname }}
+
 
 # - hosts: graphite
 #   become: yes
