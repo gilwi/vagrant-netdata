@@ -46,6 +46,8 @@
 
 - hosts: prometheus
   become: yes
+  vars:
+
   tasks:
 
     - name: Add grafana repo
@@ -63,13 +65,7 @@
       package:
         name: grafana
         state: present
-
-    - name: Enable service grafana-server
-      systemd:
-        name: grafana-server
-        enabled: yes
-        state: started
-        daemon_reload: yes
+      notify: Restart grafana-server
 
     - name: Create prometheus directory in /opt
       ansible.builtin.file:
@@ -90,3 +86,40 @@
       ansible.builtin.template:
         src: templates/prometheus.yml.j2
         dest: /opt/prometheus/prometheus.yml
+
+    - name: Configure graphite exporter
+      copy:
+        dest: /etc/systemd/system/prometheus.service
+        content: |
+          [Unit]
+          Description=Prometheus Server
+          AssertPathExists=/opt/prometheus
+
+          [Service]
+          Type=simple
+          WorkingDirectory=/opt/prometheus
+          User=prometheus
+          Group=prometheus
+          ExecStart=/opt/prometheus/prometheus --config.file=/opt/prometheus/prometheus.yml --log.level=info
+          ExecReload=/bin/kill -SIGHUP $MAINPID
+          ExecStop=/bin/kill -SIGINT $MAINPID
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: Restart prometheus
+
+  handlers:
+    - name: Restart prometheus
+      systemd:
+        name: prometheus
+        enabled: yes
+        state: restarted
+        daemon_reload: yes
+
+    - name: Restart grafana-server
+      systemd:
+        name: grafana-server
+        enabled: yes
+        state: restarted
+        daemon_reload: yes
+
