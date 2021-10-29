@@ -32,11 +32,11 @@ Vagrant.configure("2") do |config|
     libvirt.uri = "qemu:///system"
   end
 
-  # config.vm.define "prometheus", primary: true do |prom|
-  #   prom.vm.box = "centos/8"
-  #   prom.vm.network "public_network", dev: "virbr0", mode: "bridge", type: "bridge"
-  #   prom.vm.network "private_network", ip: "10.21.30.40", libvirt__network_name: "vagrant-net2"
-  # end
+  config.vm.define "prometheus", primary: true do |prom|
+    prom.vm.box = "centos/8"
+    prom.vm.network "public_network", dev: "virbr0", mode: "bridge", type: "bridge"
+    prom.vm.network "private_network", ip: "10.21.30.40", libvirt__network_name: "vagrant-net2"
+  end
 
   # config.vm.define "graphite", primary: true do |graph|
   #   graph.vm.box = "centos/8"
@@ -44,11 +44,11 @@ Vagrant.configure("2") do |config|
   #   graph.vm.network "private_network", ip: "10.21.30.40", libvirt__network_name: "vagrant-net2"
   # end
 
-  config.vm.define "graphitebuntu", primary: true do |graph|
-    graph.vm.box = "generic/ubuntu1804"
-    graph.vm.network "public_network", dev: "virbr0", mode: "bridge", type: "bridge"
-    graph.vm.network "private_network", ip: "10.21.30.50", libvirt__network_name: "vagrant-net2"
-  end
+  # config.vm.define "graphitebuntu", primary: true do |graph|
+  #   graph.vm.box = "generic/ubuntu1804"
+  #   graph.vm.network "public_network", dev: "virbr0", mode: "bridge", type: "bridge"
+  #   graph.vm.network "private_network", ip: "10.21.30.50", libvirt__network_name: "vagrant-net2"
+  # end
 
   N = 1
   
