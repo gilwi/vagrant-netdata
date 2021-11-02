@@ -82,12 +82,7 @@
         extra_opts:
         - --strip=1
 
-    - name: Template a file, using symbolic modes (equivalent to 0644)
-      ansible.builtin.template:
-        src: templates/prometheus.yml.j2
-        dest: /opt/prometheus/prometheus.yml
-
-    - name: Configure graphite exporter
+    - name: Configure prometheus unit file
       copy:
         dest: /etc/systemd/system/prometheus.service
         content: |
@@ -106,6 +101,12 @@
 
           [Install]
           WantedBy=multi-user.target
+      notify: Restart prometheus
+
+    - name: Configure prometheus
+      ansible.builtin.template:
+        src: templates/prometheus.yml.j2
+        dest: /opt/prometheus/prometheus.yml
       notify: Restart prometheus
 
   handlers:
