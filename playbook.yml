@@ -22,7 +22,7 @@
         mode: '0700'
 
     - name: install netdata
-      shell: bash /opt/kickstart.sh --dont-wait
+      shell: bash /opt/kickstart.sh --non-interactive
       args:
         creates: /opt/netdata
 
@@ -32,9 +32,6 @@
         content: |
           [exporting:global]
               enabled = yes
-          [graphite:netdata]
-              enabled = yes
-              destination = graphitebuntu:2003
               hostname = {{ inventory_hostname }}
       notify: Restart netdata
 
@@ -67,11 +64,13 @@
         state: present
       notify: Restart grafana-server
 
-    - name: Create prometheus directory in /opt
-      ansible.builtin.file:
-        path: /opt/prometheus
-        state: directory
-        mode: '0755'
+    - name: Create prometheus user with home directory
+      user: 
+        name: prometheus
+        shell: /bin/false
+        home: /opt/prometheus
+        createhome: yes 
+        comment: 'Created by Ansible'
 
     - name: Unarchive prometheus sources
       unarchive:
@@ -79,6 +78,8 @@
         dest: /opt/prometheus
         exclude: /opt/prometheus/prometheus.yml
         remote_src: yes
+        owner: prometheus
+        group: prometheus
         extra_opts:
         - --strip=1
 
@@ -104,7 +105,7 @@
       notify: Restart prometheus
 
     - name: Configure prometheus
-      ansible.builtin.template:
+      template:
         src: templates/prometheus.yml.j2
         dest: /opt/prometheus/prometheus.yml
       notify: Restart prometheus
